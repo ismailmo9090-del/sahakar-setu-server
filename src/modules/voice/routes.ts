@@ -7,6 +7,7 @@ import { extractFacts, saveFacts, getCaseFacts } from '../../modules/case-memory
 import { storeTurn, getRecentTurns } from '../../modules/chat-log/index.js';
 import { VoskSTT } from '../../modules/stt/vosk.js';
 import { EdgeTTS } from '../../modules/tts/edge.js';
+import { getGttsTTS } from '../../modules/tts/gtts.js';
 import { logger } from '../../config/logger.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
@@ -46,6 +47,7 @@ export function runTTS(text: string, lang: string): Promise<Buffer> {
 // once here instead of on the first user request.
 getSTT();
 getTTS();
+getGttsTTS();
 
 router.post('/voice', async (req: Request, res: Response) => {
   const start = Date.now();

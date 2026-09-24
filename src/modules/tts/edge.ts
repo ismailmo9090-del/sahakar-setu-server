@@ -5,9 +5,20 @@ import { randomUUID } from 'crypto';
 import { logger } from '../../config/logger.js';
 import { cacheGet, cacheSet, isRedisAvailable } from '../../services/cache.js';
 import { createHash } from 'crypto';
+import { getGttsTTS } from './gtts.js';
+import { groqTts } from './groqTts.js';
 
 const ttsMemoryCache = new Map<string, Buffer>();
 const MEMORY_CACHE_MAX = 200;
+
+function rememberTts(cacheKey: string, audio: Buffer) {
+  if (ttsMemoryCache.size >= MEMORY_CACHE_MAX) {
+    const firstKey = ttsMemoryCache.keys().next().value;
+    if (firstKey) ttsMemoryCache.delete(firstKey);
+  }
+  ttsMemoryCache.set(cacheKey, audio);
+  cacheSet(cacheKey, audio, 86400).catch(() => {});
+}
 
 export class EdgeTTS extends EventEmitter {
   private process: ChildProcess;
@@ -93,10 +104,30 @@ export class EdgeTTS extends EventEmitter {
       }
     }
 
-    if (!this.isAlive()) {
-      throw new Error('TTS service not available');
+    if (this.isAlive()) {
+      try {
+        const audio = await this.requestEdge(normalizedText, lang);
+        rememberTts(cacheKey, audio);
+        return audio;
+      } catch (err) {
+        logger.warn({ err: (err as Error).message }, 'edge-tts failed, trying gTTS');
+      }
     }
 
+    try {
+      const audio = await getGttsTTS().synthesize(normalizedText, lang);
+      rememberTts(cacheKey, audio);
+      return audio;
+    } catch (err) {
+      logger.warn({ err: (err as Error).message }, 'gTTS failed, trying Groq orpheus');
+    }
+
+    const audio = await groqTts(normalizedText);
+    rememberTts(cacheKey, audio);
+    return audio;
+  }
+
+  private requestEdge(text: string, lang: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const id = randomUUID();
       const timeout = setTimeout(() => {
@@ -107,12 +138,6 @@ export class EdgeTTS extends EventEmitter {
       this.pending.set(id, {
         resolve: (audio: Buffer) => {
           clearTimeout(timeout);
-          cacheSet(cacheKey, audio, 86400).catch(() => {});
-          if (ttsMemoryCache.size >= MEMORY_CACHE_MAX) {
-            const firstKey = ttsMemoryCache.keys().next().value;
-            if (firstKey) ttsMemoryCache.delete(firstKey);
-          }
-          ttsMemoryCache.set(cacheKey, audio);
           resolve(audio);
         },
         reject: (err: Error) => {
@@ -121,7 +146,7 @@ export class EdgeTTS extends EventEmitter {
         },
       });
 
-      this.process.stdin!.write(JSON.stringify({ text: normalizedText, lang, id }) + '\n');
+      this.process.stdin!.write(JSON.stringify({ text, lang, id }) + '\n');
     });
   }
 
