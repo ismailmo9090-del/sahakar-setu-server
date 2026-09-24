@@ -1,0 +1,32 @@
+version: '3.9'
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: sahakar_setu
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./models:/app/models
+      - ./corpus:/app/corpus
+
+volumes:
+  pgdata:

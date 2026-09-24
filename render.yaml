@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: sahakar-setu-server
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: postgres://dummy:dummy@localhost:5432/dummy
+      - key: REDIS_URL
+        value: redis://localhost:6379
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: HMAC_SECRET
+        sync: false
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_WEBHOOK_SECRET
+        sync: false
+      - key: VAPI_PUBLIC_BASE_URL
+        sync: false
+      - key: VAPI_LLM_SECRET
+        sync: false

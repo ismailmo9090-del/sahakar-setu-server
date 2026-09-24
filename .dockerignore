@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+*.log
+*.bat
+.git
+corpus-processed
+test_audio.wav
+test_output.mp3
+API_GUIDE.md
