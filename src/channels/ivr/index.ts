@@ -164,7 +164,7 @@ export async function handleVAPIWebhook(req: Request, res: Response) {
 
       if (type === 'assistant-request') {
         const env = getEnv();
-        const serverUrl = env.VAPI_PUBLIC_BASE_URL || 'https://ethanol-cash-peculiar.ngrok-free.dev';
+        const serverUrl = env.VAPI_PUBLIC_BASE_URL || 'https://sahakar-setu-server.onrender.com';
         return res.status(200).json({
           assistant: {
             name: 'Sahakar Setu Male Assistant',
